@@ -23,9 +23,11 @@ public:
 	{
 		for (const_iterator it = other.begin(); it != other.end(); it++) { push_back(*it); }
 	}
-	void operator=(circular_buffer const &other)
+	circular_buffer& operator=(circular_buffer const &other)
 	{
-		for (const_iterator it = other.begin(); it != other.end(); it++) { push_back(*it); }
+		circular_buffer tmp(other);
+		swap(*this, tmp);
+		return *this;
 	}
 	~circular_buffer()
 	{
@@ -113,9 +115,9 @@ public:
 	}
 	void pop_back()
 	{
-		buffer[tail].~T();
 		if(tail == 0) { tail = capacity - 1; }
 		tail--;
+		buffer[tail].~T();
 	}
 	iterator erase(const_iterator pos)
 	{
