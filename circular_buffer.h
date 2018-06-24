@@ -92,12 +92,12 @@ public:
 		if (dist(head, pos.index) + 1 <= dist(pos.index, tail))
 		{
 			push_front(value);
-			for (size_t i = 0; i < pos - const_iterator(begin()); i++) { std::swap(operator[](i), operator[](i + 1)); }
+			for (int i = 0; i < pos - const_iterator(begin()); i++) { std::swap(operator[](i), operator[](i + 1)); }
 		}
 		else
 		{
 			push_back(value);
-			for (size_t i = size() - 1; i > pos - const_iterator(begin()); i--) { std::swap(operator[](i), operator[](i - 1)); }
+			for (int i = size() - 1; i > pos - const_iterator(begin()); i--) { std::swap(operator[](i), operator[](i - 1)); }
 		}
 		return iterator(buffer, pos - const_iterator(begin()), head, tail, capacity);
 	}
