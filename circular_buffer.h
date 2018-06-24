@@ -21,7 +21,10 @@ public:
 	circular_buffer() : buffer(nullptr), capacity(0), head(0), tail(0){}
 	circular_buffer(circular_buffer const &other): circular_buffer()
 	{
-		if (!other.empty()) { for (const_iterator it = other.begin(); it != other.end(); it++) { push_back(T(*it)); }
+		if (!other.empty())
+		{
+			for (const_iterator it = other.begin(); it != other.end(); it++) { push_back(T(*it)); }
+		}
 	}
 	circular_buffer& operator=(circular_buffer const &other)
 	{
@@ -150,10 +153,14 @@ private:
 			if (size() == capacity - 1)
 			{
 				T* new_buffer = static_cast<T*>(operator new(sizeof(T) * 2 * capacity));
+				int j = 0;
 				try
 				{
-					int j = 0;
-					for (iterator it = begin(); it != end(); it++) { new_buffer[j++] = T(*it); }
+					for (iterator it = begin(); it != end(); it++) 
+					{ 
+						new (&new_buffer[j]) T(*it); 
+						j++;
+					}
 					for (iterator it = begin(); it != end(); it++) (*it).~T();
 					tail = size();
 					head = 0;
@@ -163,6 +170,7 @@ private:
 				}
 				catch (std::runtime_error &e)
 				{
+					for (int i = 0; i <= j; i++) { new_buffer[j].~T(); }
 					operator delete(new_buffer);
 				}
 			}
