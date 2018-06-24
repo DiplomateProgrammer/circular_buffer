@@ -21,7 +21,7 @@ public:
 	circular_buffer() : buffer(nullptr), capacity(0), head(0), tail(0){}
 	circular_buffer(circular_buffer const &other): circular_buffer()
 	{
-		for (const_iterator it = other.begin(); it != other.end(); it++) { push_back(T(*it)); }
+		if (!other.empty()) { for (const_iterator it = other.begin(); it != other.end(); it++) { push_back(T(*it)); }
 	}
 	circular_buffer& operator=(circular_buffer const &other)
 	{
