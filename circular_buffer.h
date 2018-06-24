@@ -18,12 +18,7 @@ public:
 	using const_iterator = circular_iterator<const T>;
 	using reverse_iterator = std::reverse_iterator<iterator>;
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-	circular_buffer()
-	{
-		buffer = static_cast<T*>(operator new[](sizeof(T) * INIT_SIZE));
-		capacity = INIT_SIZE;
-		head = tail = 0;
-	}
+	circular_buffer() : buffer(nullptr), capacity(0), head(0), tail(0) {}
 	~circular_buffer()
 	{
 		delete[] buffer;
@@ -42,15 +37,22 @@ public:
 	void push_back(T elem)
 	{
 		ensure_capacity();
-		buffer[tail++] = elem;
+		new (&buffer[tail++]) T(elem);
 		tail %= capacity;
 	}
 	void push_front(T elem)
 	{
 		ensure_capacity();
-		if (head == 0) { head = capacity - 1; }
-		else { head--; }
-		buffer[head] = elem;
+		size_t head2 = head;
+		if (head2 == 0) { head2 = capacity - 1; }
+		else { head2--; }
+		new(&buffer[head2]) T(elem);
+		head = head2;
+	}
+	void clear()
+	{
+		tail = 0;
+		head = 0;
 	}
 	T& operator[](const size_t index)
 	{
@@ -120,24 +122,38 @@ public:
 private:
 	void ensure_capacity()
 	{
-		if (size() == capacity - 1)
+		if (capacity == 0)
 		{
-			T* new_buffer = static_cast<T*>(operator new[](sizeof(T) * 2 * capacity));
-			if (head < tail)
-			{
-				for (size_t i = head; i < tail; i++) { new_buffer[i - head] = buffer[i]; }
-			}
-			else
-			{
-				for (size_t i = head; i < capacity; i++) { new_buffer[i - head] = buffer[i]; }
-				for (size_t i = 0; i < tail; i++) { new_buffer[i + (capacity - head)] = buffer[i]; }
-			}
-			tail = size();
-			head = 0;
-			delete[] buffer;
-			buffer = new_buffer;
-			capacity *= 2;
+			buffer = static_cast<T*>(operator new[](sizeof(T) * INIT_SIZE));
+			capacity = INIT_SIZE;
+			head = tail = 0;
 		}
+		else
+			if (size() == capacity - 1)
+			{
+				T* new_buffer = static_cast<T*>(operator new[](sizeof(T) * 2 * capacity));
+				try
+				{
+					if (head < tail)
+					{
+						for (size_t i = head; i < tail; i++) { new (&new_buffer[i - head]) T(buffer[i]); }
+					}
+					else
+					{
+						for (size_t i = head; i < capacity; i++) { new (&new_buffer[i - head]) T(buffer[i]); }
+						for (size_t i = 0; i < tail; i++) { new (&new_buffer[i + (capacity - head)]) T(buffer[i]); }
+					}
+					tail = size();
+					head = 0;
+					delete[] buffer;
+					buffer = new_buffer;
+					capacity *= 2;
+				}
+				catch (std::runtime_error &e)
+				{
+					delete new_buffer;
+				}
+			}
 	}
 	size_t dist(size_t one, size_t two)
 	{
@@ -150,7 +166,7 @@ private:
 template<typename X>
 void swap(circular_buffer<X> &b1, circular_buffer<X> &b2) noexcept
 {
-    std::swap(b1.buffer, b2.buffer);
+	std::swap(b1.buffer, b2.buffer);
 	std::swap(b1.capacity, b2.capacity);
 	std::swap(b1.head, b2.head);
 	std::swap(b1.tail, b2.tail);
