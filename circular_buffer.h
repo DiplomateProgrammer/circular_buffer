@@ -128,7 +128,7 @@ public:
 		}
 		else
 		{
-			for (size_t i = pos - const_iterator(begin()); i < size(); i++) { std::swap(operator[](i), operator[](i + 1)); }
+			for (size_t i = pos - const_iterator(begin()); i < size() - 1; i++) { std::swap(operator[](i), operator[](i + 1)); }
 			pop_back();
 		}
 		return iterator(buffer, pos - const_iterator(begin()), head, tail, capacity);
