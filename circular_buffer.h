@@ -45,13 +45,13 @@ public:
 			return (capacity - head + tail);
 		}
 	}
-	void push_back(T elem)
+	void push_back(T const &elem)
 	{
 		ensure_capacity();
 		new (&buffer[tail++]) T(elem);
 		tail %= capacity;
 	}
-	void push_front(T elem)
+	void push_front(T const &elem)
 	{
 		ensure_capacity();
 		size_t head2 = head;
