@@ -18,8 +18,12 @@ public:
 	using const_iterator = circular_iterator<const T>;
 	using reverse_iterator = std::reverse_iterator<iterator>;
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-	circular_buffer() : buffer(nullptr), capacity(0), head(0), tail(0) {}
+	circular_buffer() : buffer(nullptr), capacity(0), head(0), tail(0){}
 	circular_buffer(circular_buffer const &other): circular_buffer()
+	{
+		for (const_iterator it = other.begin(); it != other.end(); it++) { push_back(*it); }
+	}
+	void operator=(circular_buffer const &other)
 	{
 		for (const_iterator it = other.begin(); it != other.end(); it++) { push_back(*it); }
 	}
@@ -110,8 +114,8 @@ public:
 	void pop_back()
 	{
 		buffer[tail].~T();
+		if(tail == 0) { tail = capacity - 1; }
 		tail--;
-		if (tail == -1) { tail = capacity - 1; }
 	}
 	iterator erase(const_iterator pos)
 	{
