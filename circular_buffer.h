@@ -170,7 +170,7 @@ private:
 				}
 				catch (std::runtime_error &e)
 				{
-					for (int i = 0; i <= j; i++) { new_buffer[j].~T(); }
+					for (int i = 0; i <= j; i++) { new_buffer[i].~T(); }
 					operator delete(new_buffer);
 				}
 			}
