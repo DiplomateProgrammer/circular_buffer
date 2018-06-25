@@ -3,6 +3,7 @@
 #include <memory>
 #include <iterator>
 #include <type_traits>
+#include <iostream>
 constexpr int INIT_SIZE = 10;
 template<typename T>
 struct circular_buffer;
@@ -18,8 +19,8 @@ public:
 	using const_iterator = circular_iterator<const T>;
 	using reverse_iterator = std::reverse_iterator<iterator>;
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-	circular_buffer() : buffer(nullptr), capacity(0), head(0), tail(0){}
-	circular_buffer(circular_buffer const &other): circular_buffer()
+	circular_buffer() : buffer(nullptr), capacity(0), head(0), tail(0) {}
+	circular_buffer(circular_buffer const &other) : circular_buffer()
 	{
 		if (!other.empty())
 		{
@@ -34,11 +35,8 @@ public:
 	}
 	~circular_buffer()
 	{
-		if (!empty())
-		{
-			for (const_iterator it = begin(); it != end(); it++) { (*it).~T(); }
-			operator delete(buffer);
-		}
+		for (const_iterator it = begin(); it != end(); it++) { (*it).~T(); }
+		if (capacity > 0) { operator delete(buffer); }
 	}
 	size_t size() const
 	{
@@ -53,19 +51,27 @@ public:
 	}
 	void push_back(T const &elem)
 	{
-		ensure_capacity();
-		new (&buffer[tail]) T(elem);
-		tail++;
-		tail %= capacity;
+		try
+		{
+			ensure_capacity();
+			new (&buffer[tail]) T(elem);
+			tail++;
+			tail %= capacity;
+		}
+		catch (std::runtime_error &e) { std::cerr << "Caught error, push _back failed"; }
 	}
 	void push_front(T const &elem)
 	{
-		ensure_capacity();
-		size_t head2 = head;
-		if (head2 == 0) { head2 = capacity - 1; }
-		else { head2--; }
-		new(&buffer[head2]) T(elem);
-		head = head2;
+		try
+		{
+			ensure_capacity();
+			size_t head2 = head;
+			if (head2 == 0) { head2 = capacity - 1; }
+			else { head2--; }
+			new(&buffer[head2]) T(elem);
+			head = head2;
+		}
+		catch (std::runtime_error &e) { std::cerr << "Caught error, push_front failed"; }
 	}
 	void clear()
 	{
@@ -92,14 +98,14 @@ public:
 	T& front() const { return operator[](0); }
 	T& back() const { return operator[](size() - 1); }
 	iterator begin() { return iterator(buffer, 0, head, tail, capacity); } const
-	iterator end() { return iterator(buffer, size(), head, tail, capacity); } const
-	const_iterator begin() const { return const_iterator(buffer, 0, head, tail, capacity); } const
-	const_iterator end() const { return const_iterator(buffer, size(), head, tail, capacity); } const
-	reverse_iterator rbegin() { return reverse_iterator(end()); } const
-	reverse_iterator rend() { return reverse_iterator(begin()); } const
-	const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); } const
-	const_reverse_iterator rend() const { return const_reverse_iterator(begin()); } const
-	iterator insert(const_iterator pos, T const &value)
+		iterator end() { return iterator(buffer, size(), head, tail, capacity); } const
+		const_iterator begin() const { return const_iterator(buffer, 0, head, tail, capacity); } const
+		const_iterator end() const { return const_iterator(buffer, size(), head, tail, capacity); } const
+		reverse_iterator rbegin() { return reverse_iterator(end()); } const
+		reverse_iterator rend() { return reverse_iterator(begin()); } const
+		const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); } const
+		const_reverse_iterator rend() const { return const_reverse_iterator(begin()); } const
+		iterator insert(const_iterator pos, T const &value)
 	{
 		//ensure_capacity();
 		if (dist(head, pos.index) + 1 <= dist(pos.index, tail))
@@ -122,7 +128,7 @@ public:
 	}
 	void pop_back()
 	{
-		if(tail == 0) { tail = capacity - 1; }
+		if (tail == 0) { tail = capacity - 1; }
 		tail--;
 		buffer[tail].~T();
 	}
@@ -149,35 +155,36 @@ private:
 	{
 		if (capacity == 0)
 		{
-			buffer = static_cast<T*>(operator new(sizeof(T) * INIT_SIZE));
+			T* new_buffer = static_cast<T*>(operator new(sizeof(T) * INIT_SIZE));
+			buffer = new_buffer;
 			capacity = INIT_SIZE;
 			head = tail = 0;
 		}
-		else
-			if (size() == capacity - 1)
+		else if (size() == capacity - 1)
+		{
+			T* new_buffer = static_cast<T*>(operator new(sizeof(T) * 2 * capacity));
+			int j = 0;
+			try
 			{
-				T* new_buffer = static_cast<T*>(operator new(sizeof(T) * 2 * capacity));
-				int j = 0;
-				try
+				for (iterator it = begin(); it != end(); it++)
 				{
-					for (iterator it = begin(); it != end(); it++) 
-					{ 
-						new (&new_buffer[j]) T(*it); 
-						j++;
-					}
-					for (iterator it = begin(); it != end(); it++) (*it).~T();
-					tail = size();
-					head = 0;
-					operator delete(buffer);
-					buffer = new_buffer;
-					capacity *= 2;
+					new (&new_buffer[j]) T(*it);
+					j++;
 				}
-				catch (std::runtime_error &e)
-				{
-					for (int i = 0; i < j; i++) { new_buffer[i].~T(); }
-					operator delete(new_buffer);
-				}
+				for (iterator it = begin(); it != end(); it++) (*it).~T();
+				tail = size();
+				head = 0;
+				operator delete(buffer);
+				buffer = new_buffer;
+				capacity *= 2;
 			}
+			catch (std::runtime_error &e)
+			{
+				for (int i = 0; i < j; i++) { new_buffer[i].~T(); }
+				operator delete(new_buffer);
+				throw e;
+			}
+		}
 	}
 	size_t dist(size_t one, size_t two)
 	{
