@@ -51,19 +51,19 @@ public:
 	}
 	void push_back(T const &elem)
 	{
-			ensure_capacity();
-			new (&buffer[tail]) T(elem);
-			tail++;
-			tail %= capacity;
+		ensure_capacity();
+		new (&buffer[tail]) T(elem);
+		tail++;
+		tail %= capacity;
 	}
 	void push_front(T const &elem)
 	{
-			ensure_capacity();
-			size_t head2 = head;
-			if (head2 == 0) { head2 = capacity - 1; }
-			else { head2--; }
-			new(&buffer[head2]) T(elem);
-			head = head2;
+		ensure_capacity();
+		size_t head2 = head;
+		if (head2 == 0) { head2 = capacity - 1; }
+		else { head2--; }
+		new(&buffer[head2]) T(elem);
+		head = head2;
 	}
 	void clear()
 	{
