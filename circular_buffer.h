@@ -3,7 +3,6 @@
 #include <memory>
 #include <iterator>
 #include <type_traits>
-#include <iostream>
 constexpr int INIT_SIZE = 10;
 template<typename T>
 struct circular_buffer;
@@ -19,9 +18,10 @@ public:
 	using const_iterator = circular_iterator<const T>;
 	using reverse_iterator = std::reverse_iterator<iterator>;
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-	circular_buffer() : buffer(nullptr), capacity(0), head(0), tail(0) {}
+	circular_buffer() : buffer(nullptr), capacity(0), head(0), tail(0) { }
 	circular_buffer(circular_buffer const &other) : circular_buffer()
 	{
+		//throw "test";
 		if (!other.empty())
 		{
 			for (const_iterator it = other.begin(); it != other.end(); it++) { push_back(T(*it)); }
@@ -51,27 +51,19 @@ public:
 	}
 	void push_back(T const &elem)
 	{
-		try
-		{
 			ensure_capacity();
 			new (&buffer[tail]) T(elem);
 			tail++;
 			tail %= capacity;
-		}
-		catch (std::runtime_error &e) { std::cerr << "Caught error, push _back failed"; }
 	}
 	void push_front(T const &elem)
 	{
-		try
-		{
 			ensure_capacity();
 			size_t head2 = head;
 			if (head2 == 0) { head2 = capacity - 1; }
 			else { head2--; }
 			new(&buffer[head2]) T(elem);
 			head = head2;
-		}
-		catch (std::runtime_error &e) { std::cerr << "Caught error, push_front failed"; }
 	}
 	void clear()
 	{
@@ -128,7 +120,7 @@ public:
 	}
 	void pop_back()
 	{
-		if (tail == 0) { tail = capacity - 1; }
+		if (tail == 0) { tail = capacity; }
 		tail--;
 		buffer[tail].~T();
 	}
@@ -178,11 +170,11 @@ private:
 				buffer = new_buffer;
 				capacity *= 2;
 			}
-			catch (std::runtime_error &e)
+			catch (std::exception &e)
 			{
 				for (int i = 0; i < j; i++) { new_buffer[i].~T(); }
 				operator delete(new_buffer);
-				throw e;
+				throw;
 			}
 		}
 	}
